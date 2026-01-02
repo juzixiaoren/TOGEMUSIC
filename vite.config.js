@@ -12,10 +12,10 @@ export default defineConfig({
   ],
   server: {
     host: '127.0.0.1',
-    port: 5173,
+    port: 11451,
     proxy: {
       '/reverse': {
-        target: 'http://localhost:5000', // 后端服务地址
+        target: 'http://localhost:19198', // 后端服务地址
         changeOrigin: true,
         pathRewrite: { '^/reverse': '' },
       },
