@@ -59,12 +59,14 @@ export default {
             file,
             title: file.name.replace(/\.[^/.]+$/, ''), // 默认歌名
             artist: '', // 默认歌手，可从元数据获取
-            duration: null
+            duration: null,
+            durationSec: null    // 秒数, 用于上传
           };
           this.getAudioMetadata(file).then(metadata => {
-            fileData.artist = metadata.artist || '';
-            fileData.duration = metadata.duration ? this.formatDuration(metadata.duration) : '';
-          });
+          fileData.artist = metadata.artist || '';
+          fileData.durationSec = metadata.duration || 0;
+          fileData.duration = metadata.duration ? this.formatDuration(metadata.duration) : '';
+        });
           this.files.push(fileData);
         }
       }
@@ -93,6 +95,7 @@ export default {
         formData.append('files', fileData.file);
         formData.append(`titles[${index}]`, fileData.title);
         formData.append(`artists[${index}]`, fileData.artist);
+        formData.append(`durations[${index}]`, fileData.durationSec ? Math.floor(fileData.durationSec * 1000) : 0);
       });
       try {
         await axios.post('/upload', formData, {

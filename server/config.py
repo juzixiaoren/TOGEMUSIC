@@ -5,3 +5,4 @@ class Config:
     SECRET_KEY = os.urandom(24)
     DEBUG = True
     SERVER_PORT = 19198
+    SCHEDULER_API_ENABLED = True

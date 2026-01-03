@@ -27,9 +27,39 @@ def upload_music():
     if not user_id:
         return jsonify({'message': 'Invalid token'}), 401
 
+    # 打印调试信息
+    print("=== request.form ===")
+    for k, v in request.form.items():
+        print(f"{k} -> {v}")
+    print("=== request.files ===")
+    for f in request.files:
+        print(f"{f} -> {request.files[f].filename}")
+
     files = request.files.getlist('files')
-    titles = request.form.getlist('titles')
-    artists = request.form.getlist('artists')
+
+    # 按下标动态读取 titles, artists, durations
+    titles, artists, durations = [], [], []
+    i = 0
+    while True:
+        t_key = f'titles[{i}]'
+        a_key = f'artists[{i}]'
+        d_key = f'durations[{i}]'
+
+        t_val = request.form.get(t_key)
+        a_val = request.form.get(a_key)
+        d_val = request.form.get(d_key)
+
+        # 都没有就结束
+        if t_val is None and a_val is None and d_val is None:
+            break
+
+        titles.append(t_val or '')
+        artists.append(a_val or '')
+        try:
+            durations.append(int(d_val))
+        except (TypeError, ValueError):
+            durations.append(0)
+        i += 1
 
     for i, file in enumerate(files):
         if file and file.filename:
@@ -38,13 +68,17 @@ def upload_music():
             file_path = os.path.join(UPLOADS_DIR, filename)
             os.makedirs(UPLOADS_DIR, exist_ok=True)
             file.save(file_path)
-            title = titles[i] if i < len(titles) else filename.replace('.mp3', '').replace('.flac', '').replace('.wav', '').replace('.ogg', '').replace('.aac', '').replace('.m4a', '')
+
+            # 防止索引越界
+            title = titles[i] if i < len(titles) else filename.rsplit('.', 1)[0]
             artist = artists[i] if i < len(artists) else ''
-            # 计算 duration，这里简化
-            duration = 0  # 需要使用库计算
+            duration = durations[i] if i < len(durations) else 0
+
+            print(f"Saving song: {title}, {artist}, {duration}ms, {file_path}")
             song_model.add_song(title, artist, duration, file_path, user_id, file_extension)
 
     return jsonify({'message': 'Upload successful'}), 200
+
 
 @music_bp.route('/songs', methods=['GET'])
 def get_songs():
@@ -57,9 +91,16 @@ def get_playlists():
     user_id = verify_token(token)
     if user_id is None:
         return jsonify({'message': 'Invalid token'}), 401
+    playlists = playlist_model.get_default_playlists()
+    return jsonify([dict(zip(['id', 'creater_id', 'playlist_name'], p)) for p in playlists]), 200
+@music_bp.route('/getAllPlaylists', methods=['GET'])
+def get_all_playlists():
+    token = request.headers.get('Authorization')
+    user_id = verify_token(token)
+    if user_id is None:
+        return jsonify({'message': 'Invalid token'}), 401
     playlists = playlist_model.get_all_playlists()
     return jsonify([dict(zip(['id', 'creater_id', 'playlist_name'], p)) for p in playlists]), 200
-
 @music_bp.route('/playlists', methods=['POST'])
 def create_playlist():
     token = request.headers.get('Authorization')

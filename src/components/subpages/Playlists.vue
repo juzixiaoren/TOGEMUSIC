@@ -33,7 +33,7 @@ export default {
   methods: {
     async loadPlaylists() {
       try {
-        const response = await axios.get('/playlists', {
+        const response = await axios.get('/getAllPlaylists', {
           headers: { Authorization: localStorage.getItem('token') }
         });
         this.playlists = response.data;

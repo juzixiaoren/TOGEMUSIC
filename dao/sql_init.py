@@ -29,6 +29,7 @@ class SQLInit:
         db_file = os.path.join(self.db_path, self.db_name)
         with sqlite3.connect(db_file) as conn:
             with closing(conn.cursor()) as cursor:
+                cursor.execute("PRAGMA foreign_keys = ON;")
                 cursor.execute("""
         CREATE TABLE IF NOT EXISTS songs(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,7 +40,7 @@ class SQLInit:
             file_path TEXT NOT NULL,
             file_extension TEXT,
             time_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(title, artist)
+            UNIQUE(title, artist),
             FOREIGN KEY (uploader_id) REFERENCES users(id)
         )
         """)
@@ -69,7 +70,6 @@ class SQLInit:
                 song_id INTEGER,
                 order_index INTEGER,
                 PRIMARY KEY (playlist_id, song_id),
-                UNIQUE(playlist_id),
                 FOREIGN KEY (playlist_id) REFERENCES playlists(id),
                 FOREIGN KEY (song_id) REFERENCES songs(id)
                 );
@@ -103,6 +103,7 @@ class SQLInit:
         """)
                 conn.commit()
                 # 插入默认角色
+                cursor.execute("INSERT OR IGNORE INTO users (id, username, password_hash) VALUES (1, 'system', 'SYSTEM')")
                 cursor.execute("INSERT OR IGNORE INTO ROLE (role_name) VALUES ('user')")
                 conn.commit()
                 # 插入默认歌单

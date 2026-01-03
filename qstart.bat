@@ -52,7 +52,7 @@ timeout /t 3 /nobreak >nul
 REM 启动Python后端
 echo Starting Python backend...
 if exist server\app.py (
-    start "Backend" cmd /c "python server\app.py"
+    start "Backend" cmd /k "python -m server.app"
     REM 获取Python进程PID
     timeout /t 2 /nobreak >nul
     for /f "tokens=2" %%i in ('wmic process where "name='python.exe' and commandline like '%%server\\app.py%%'" get processid /value ^| find "="') do set backend_pid=%%i

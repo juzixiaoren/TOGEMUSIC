@@ -17,9 +17,11 @@ class Playlist:
             return cursor
     
     def get_all_playlists(self):
+        cursor = self.execute("SELECT * FROM playlists")
+        return cursor.fetchall()
+    def get_default_playlists(self):
         cursor = self.execute("SELECT * FROM playlists WHERE id != 1")
         return cursor.fetchall()
-    
     def get_playlist(self, playlist_id):
         cursor = self.execute("SELECT * FROM playlists WHERE id = ?", (playlist_id,))
         return cursor.fetchone()
