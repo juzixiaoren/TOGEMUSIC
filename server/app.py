@@ -55,7 +55,7 @@ def register_tasks():
         new_song = cursor.fetchone()
         new_song_id = new_song[0] if new_song else None
 
-        socketio.emit('song_changed', {'new_song_id': new_song_id})
+        socketio.emit('song_changed', {'new_song_id': new_song_id}, room=None)
         print("🎵 song ended, switched to next")
 
 def create_app():

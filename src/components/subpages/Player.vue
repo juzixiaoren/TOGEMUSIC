@@ -44,7 +44,9 @@ let isInitializing = false; // 初始化锁，防止并发调用
 let globalHowl = null;
 
 // 连接到后端SocketIO
-const socket = io('http://localhost:19198');
+const socket = io('http://localhost:19198', {
+  transports: ['websocket', 'polling'] // 保证兼容性
+});
 export default {
   name: 'Player',
   data() {
@@ -73,9 +75,19 @@ export default {
     }, 1000);
 
     // 监听后端歌曲切换事件
-    socket.on('song_changed', (data) => {
-      console.log('后端切换歌曲:', data);
-      this.startPlay(); // 重新同步播放状态
+     socket.on('song_changed', async (data) => {
+      console.log('🎵 后端切歌事件:', data);
+
+      // 根据 new_song_id 找到歌曲对象
+      const newSong = this.currentPlaylist.find(s => s.id === data.new_song_id);
+      if (!newSong) {
+        console.warn("找不到歌曲 ID:", data.new_song_id);
+        return;
+      }
+
+      // 播放新歌曲
+      await this.playSong(newSong, 0);  // offset=0
+      this.currentIndex = this.currentPlaylist.indexOf(newSong);
     });
   },
   beforeUnmount() {
