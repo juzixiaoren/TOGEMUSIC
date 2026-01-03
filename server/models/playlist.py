@@ -16,8 +16,8 @@ class Playlist:
             cursor.execute(query, params)
             return cursor
     
-    def get_all_playlists(self, user_id):
-        cursor = self.execute("SELECT * FROM playlists WHERE creater_id = ?", (user_id,))
+    def get_all_playlists(self):
+        cursor = self.execute("SELECT * FROM playlists WHERE id != 1")
         return cursor.fetchall()
     
     def get_playlist(self, playlist_id):

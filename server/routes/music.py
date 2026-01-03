@@ -4,7 +4,7 @@ from models.song import Song
 from models.playlist import Playlist
 from models.user import User
 import os
-
+import time
 music_bp = Blueprint('music', __name__)
 
 # 获取项目根目录，确保无论从哪里运行，路径都正确
@@ -55,7 +55,9 @@ def get_songs():
 def get_playlists():
     token = request.headers.get('Authorization')
     user_id = verify_token(token)
-    playlists = playlist_model.get_all_playlists(user_id)
+    if user_id is None:
+        return jsonify({'message': 'Invalid token'}), 401
+    playlists = playlist_model.get_all_playlists()
     return jsonify([dict(zip(['id', 'creater_id', 'playlist_name'], p)) for p in playlists]), 200
 
 @music_bp.route('/playlists', methods=['POST'])
@@ -112,3 +114,23 @@ def get_users():
     # 简化，获取所有用户
     users = user_model.execute("SELECT id, username FROM users").fetchall()
     return jsonify([{'id': u[0], 'username': u[1]} for u in users]), 200
+@music_bp.route('/getplaystatus', methods=['GET'])
+def get_play_status():
+    status = song_model.get_play_status()
+    server_now = int(time.time() * 1000)
+    status = {
+        'play_start_time': status[0],
+        'is_playing': status[1],
+        'server_now': server_now
+    }
+    return jsonify(status), 200
+@music_bp.route('/getplaysongs', methods=['GET'])
+def get_play_songs():
+    songs=playlist_model.get_playlist_songs(1)
+    return jsonify([dict(zip(['id', 'title', 'artist', 'duration', 'uploader_id', 'file_path', 'file_extension', 'time_added'], song)) for song in songs]), 200
+@music_bp.route('/requestplay', methods=['POST'])
+def request_play():
+    now_time=int(time.time()*1000+2*1000)
+    song_model.set_play_status(now_time, 1)
+    return jsonify({'status':True, 'message': 'Request play successful'}), 200
+

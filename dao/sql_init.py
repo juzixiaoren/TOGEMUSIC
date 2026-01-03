@@ -69,14 +69,13 @@ class SQLInit:
                 song_id INTEGER,
                 order_index INTEGER,
                 PRIMARY KEY (playlist_id, song_id),
-                UNIQUE(order_index, playlist_id),
+                UNIQUE(playlist_id),
                 FOREIGN KEY (playlist_id) REFERENCES playlists(id),
                 FOREIGN KEY (song_id) REFERENCES songs(id)
                 );
         """)
                 
                 conn.commit()
-                # 添加其他表，如 LOGIN_HISTORY, USER_ROLE, ROLE 等，如果需要
                 cursor.execute("""
             CREATE TABLE IF NOT EXISTS LOGIN_HISTORY(
                 user_id INTEGER PRIMARY KEY,
@@ -108,6 +107,19 @@ class SQLInit:
                 conn.commit()
                 # 插入默认歌单
                 cursor.execute("INSERT OR IGNORE INTO playlists (id, creater_id, playlist_name) VALUES (1, 1, '默认播放列表')")
+                conn.commit()
+                cursor.execute("""
+                CREATE TABLE room_play_state (
+                    room_id INT PRIMARY KEY,
+                    play_start_time DATETIME,
+                    is_playing BOOLEAN
+                    );
+                """)
+                conn.commit()
+                cursor.execute("""
+                INSERT OR IGNORE INTO room_play_state (room_id,play_start_time, is_playing)
+                VALUES (1, NULL, FALSE);
+                """)
                 conn.commit()
     
     def close(self):

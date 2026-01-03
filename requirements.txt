@@ -7,3 +7,4 @@ werkzeug
 python-socketio
 PyJWT
 redis
+flask_apscheduler
