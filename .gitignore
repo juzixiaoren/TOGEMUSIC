@@ -36,3 +36,7 @@ coverage
 __screenshots__/
 #python 缓存
 __pycache__/
+# 我说我忘记写.ignore了你信吗
+*.mp3
+*.db
+*.flac
