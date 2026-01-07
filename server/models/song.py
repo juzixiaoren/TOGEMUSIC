@@ -1,13 +1,22 @@
 import sqlite3
 import os
 from contextlib import closing
+import threading
 import dao.config as config
 class Song:
     def __init__(self):
         self.db_path = os.path.join(config.DB_PATH, config.DB_NAME)
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row  # 可选，返回 dict-like row
-
+        self.local = threading.local()
+        self.get_conn().row_factory = sqlite3.Row  # 可选，返回 dict-like row
+    def get_conn(self):
+        if not hasattr(self.local, 'conn'):
+            self.local.conn = sqlite3.connect(
+                self.db_path,
+                timeout=10,
+                check_same_thread=True
+            )
+            self.local.conn.row_factory = sqlite3.Row
+        return self.local.conn
     def execute(self, query, params=()):
         with sqlite3.connect(self.db_path, timeout=30) as conn:
             conn.row_factory = sqlite3.Row
@@ -63,17 +72,17 @@ class Song:
         tmp = max_index + 1
 
         try:
-            # 使用统一的 self.conn 事务
-            with self.conn:
+            # 使用统一的 self.get_conn() 事务
+            with self.get_conn():
                 # 将 order_index = 1 的歌移到最后
-                self.conn.execute(
+                self.get_conn().execute(
                     "UPDATE playlist_songs SET order_index = ? "
                     "WHERE playlist_id = 1 AND order_index = 1",
                     (tmp,)
                 )
 
                 # 其他 song 的 order_index 前移
-                self.conn.execute(
+                self.get_conn().execute(
                     "UPDATE playlist_songs SET order_index = order_index - 1 "
                     "WHERE playlist_id = 1 AND order_index > 1"
                 )
@@ -81,6 +90,25 @@ class Song:
         except Exception as e:
             print("rotate_playlist_index failed:", e)
             raise
+    def mark_need_notify(self):
+        self.get_conn().execute(
+            "UPDATE room_play_state SET need_notify = 1 WHERE room_id = 1"
+        )
+        self.get_conn().commit()
+
+    def fetch_and_clear_notify(self):
+        cur = self.get_conn().execute(
+            "SELECT need_notify FROM room_play_state WHERE room_id = 1"
+        )
+        row = cur.fetchone()
+        if not row or row[0] == 0:
+            return False
+
+        self.get_conn().execute(
+            "UPDATE room_play_state SET need_notify = 0 WHERE room_id = 1"
+        )
+        self.get_conn().commit()
+        return True
 
 
 
@@ -89,3 +117,4 @@ class Song:
         import time
         now = int(time.time() * 1000)
         self.set_play_status(now, 1)
+        

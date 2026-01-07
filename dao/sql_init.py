@@ -113,13 +113,14 @@ class SQLInit:
                 CREATE TABLE room_play_state (
                     room_id INT PRIMARY KEY,
                     play_start_time DATETIME,
-                    is_playing BOOLEAN
+                    is_playing BOOLEAN,
+                    need_notify BOOLEAN DEFAULT FALSE
                     );
                 """)
                 conn.commit()
                 cursor.execute("""
-                INSERT OR IGNORE INTO room_play_state (room_id,play_start_time, is_playing)
-                VALUES (1, NULL, FALSE);
+                INSERT OR IGNORE INTO room_play_state (room_id,play_start_time, is_playing,need_notify)
+                VALUES (1, NULL, FALSE, FALSE);
                 """)
                 conn.commit()
     

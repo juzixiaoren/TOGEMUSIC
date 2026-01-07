@@ -47,3 +47,15 @@ class Playlist:
     
     def remove_song_from_playlist(self, playlist_id, song_id):
         self.execute("DELETE FROM playlist_songs WHERE playlist_id = ? AND song_id = ?", (playlist_id, song_id))
+    def clear_playlist(self, playlist_id):
+        self.execute("DELETE FROM playlist_songs WHERE playlist_id = ?", (playlist_id,))
+        self.execute("""UPDATE room_play_state
+                        SET play_start_time = 0,
+                        is_playing = 0
+                        WHERE room_id = ?""", (playlist_id,))
+    def reset_index(self, playlist_id,deleted_id):
+        self.execute("""
+            UPDATE playlist_songs
+            SET order_index = order_index - 1
+            WHERE playlist_id = ? AND order_index > (SELECT order_index FROM playlist_songs WHERE song_id = ? AND playlist_id = ?)
+        """, (playlist_id, deleted_id, playlist_id))

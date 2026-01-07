@@ -123,8 +123,20 @@ def get_playlist(playlist_id):
 def add_songs_to_playlist(playlist_id):
     data = request.get_json()
     song_ids = data.get('songIds', [])
-    for song_id in song_ids:
-        playlist_model.add_song_to_playlist(playlist_id, song_id)
+    source_playlist_id = data.get('sourcePlaylistId', None)
+    
+    # 如果指定了源歌单，从源歌单获取歌曲
+    if source_playlist_id:
+        source_songs = playlist_model.get_playlist_songs(source_playlist_id)
+        # 从源歌单中按选中的歌曲ID导入
+        for song in source_songs:
+            if song[0] in song_ids:  # song[0] 是 song_id
+                playlist_model.add_song_to_playlist(playlist_id, song[0])
+    else:
+        # 直接从歌曲ID列表导入
+        for song_id in song_ids:
+            playlist_model.add_song_to_playlist(playlist_id, song_id)
+    
     return jsonify({'message': 'Songs added'}), 200
 
 @music_bp.route('/playlists/<int:playlist_id>/songs/<int:song_id>', methods=['DELETE'])
@@ -169,9 +181,33 @@ def get_play_status():
 def get_play_songs():
     songs=playlist_model.get_playlist_songs(1)
     return jsonify([dict(zip(['id', 'title', 'artist', 'duration', 'uploader_id', 'file_path', 'file_extension', 'time_added'], song)) for song in songs]), 200
+
 @music_bp.route('/requestplay', methods=['POST'])
 def request_play():
+    songs=playlist_model.get_playlist_songs(1)
+    if(not songs or len(songs)==0):
+        return jsonify({'status':False, 'message': 'No songs in playlist'}), 400
     now_time=int(time.time()*1000+2*1000)
     song_model.set_play_status(now_time, 1)
     return jsonify({'status':True, 'message': 'Request play successful'}), 200
+
+@music_bp.route('/clearplaylist', methods=['GET'])
+def clear_playlist():
+    playlist_model.clear_playlist(1)
+    return jsonify({'message': 'Playlist cleared', 'success': True}), 200
+
+@music_bp.route('/removesongfromplaylist', methods=['POST'])
+def remove_song_from_playlist_request():
+    data = request.get_json()
+    song_id = data.get('songId')
+    now_songs=playlist_model.get_playlist_songs(1)
+    playlist_model.remove_song_from_playlist(1, song_id)
+    if(not now_songs or len(now_songs)==0):
+        # 如果删除前列表为空，直接返回` `
+        return jsonify({'message': '删除错误', 'success': False}), 200
+    if(len(now_songs)>0 and now_songs[0][0]==song_id):
+        # 如果删除的是当前播放的歌曲，切换下一首歌
+        playlist_model.reset_index(1, song_id)
+
+    return jsonify({'message': 'Song removed from playlist', 'success': True}), 200
 

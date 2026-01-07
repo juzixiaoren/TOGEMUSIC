@@ -7,7 +7,6 @@ import router from './router/index.js'; // 引入路由配置文件
 
 // 创建 Vue 应用实例
 const app = createApp(App);
-
 // 使用插件
 app.use(ArcoVue);
 app.use(router); // 正确注册路由
