@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_from_directory
-from flask import send_file, abort
+from flask import send_file, abort, current_app
 from models.song import Song
 from models.playlist import Playlist
 from models.user import User
@@ -125,19 +125,38 @@ def add_songs_to_playlist(playlist_id):
     song_ids = data.get('songIds', [])
     source_playlist_id = data.get('sourcePlaylistId', None)
     
+    added_count = 0
+    skipped_count = 0
+    
     # 如果指定了源歌单，从源歌单获取歌曲
     if source_playlist_id:
         source_songs = playlist_model.get_playlist_songs(source_playlist_id)
         # 从源歌单中按选中的歌曲ID导入
         for song in source_songs:
             if song[0] in song_ids:  # song[0] 是 song_id
-                playlist_model.add_song_to_playlist(playlist_id, song[0])
+                try:
+                    playlist_model.add_song_to_playlist(playlist_id, song[0])
+                    added_count += 1
+                except Exception as e:
+                    # 捕获UNIQUE约束冲突或其他错误，继续处理其他歌曲
+                    print(f"跳过歌曲 {song[0]}: {str(e)}")
+                    skipped_count += 1
     else:
         # 直接从歌曲ID列表导入
         for song_id in song_ids:
-            playlist_model.add_song_to_playlist(playlist_id, song_id)
+            try:
+                playlist_model.add_song_to_playlist(playlist_id, song_id)
+                added_count += 1
+            except Exception as e:
+                # 捕获UNIQUE约束冲突或其他错误，继续处理其他歌曲
+                print(f"跳过歌曲 {song_id}: {str(e)}")
+                skipped_count += 1
     
-    return jsonify({'message': 'Songs added'}), 200
+    return jsonify({
+        'message': f'导入成功: {added_count}首歌曲' + (f'，跳过: {skipped_count}首重复歌曲' if skipped_count > 0 else ''),
+        'added': added_count,
+        'skipped': skipped_count
+    }), 200
 
 @music_bp.route('/playlists/<int:playlist_id>/songs/<int:song_id>', methods=['DELETE'])
 def remove_song_from_playlist(playlist_id, song_id):
@@ -199,15 +218,60 @@ def clear_playlist():
 @music_bp.route('/removesongfromplaylist', methods=['POST'])
 def remove_song_from_playlist_request():
     data = request.get_json()
-    song_id = data.get('songId')
-    now_songs=playlist_model.get_playlist_songs(1)
+    song_id = data.get('song_id')
+    
+    # 获取当前播放列表
+    now_songs = playlist_model.get_playlist_songs(1)
+    
+    if not now_songs or len(now_songs) == 0:
+        # 如果删除前列表为空，直接返回错误
+        return jsonify({'message': '删除错误', 'success': False, 'is_playing': False}), 200
+    
+    # 检查删除的是否是当前播放的歌曲（order_index=1 的歌曲）
+    is_playing_song = len(now_songs) > 0 and now_songs[0][0] == song_id
+    
+    # 从播放列表中删除歌曲
     playlist_model.remove_song_from_playlist(1, song_id)
-    if(not now_songs or len(now_songs)==0):
-        # 如果删除前列表为空，直接返回` `
-        return jsonify({'message': '删除错误', 'success': False}), 200
-    if(len(now_songs)>0 and now_songs[0][0]==song_id):
+    
+    # 获取 socketio 实例
+    socketio = current_app.extensions.get('socketio')
+    
+    if is_playing_song:
         # 如果删除的是当前播放的歌曲，切换下一首歌
+        song_model.rotate_playlist_index()
+        song_model.start_next_song()
+        song_model.mark_need_notify()
+        
+        # 获取新的播放列表用于广播
+        updated_songs = playlist_model.get_playlist_songs(1)
+        songs_data = [dict(zip(['id', 'title', 'artist', 'duration', 'uploader_id', 'file_path', 'file_extension', 'time_added'], s)) for s in updated_songs]
+        
+        # 广播所有人切歌并更新歌单
+        if socketio:
+            socketio.emit('song_deleted_and_changed', {
+                'deleted_song_id': song_id,
+                'new_song_id': songs_data[0]['id'] if songs_data else None,
+                'new_song': dict(zip(['id', 'title', 'artist', 'duration', 'uploader_id', 'file_path', 'file_extension', 'time_added'], updated_songs[0])) if updated_songs else None,
+                'playlist': songs_data
+            }, room=None)
+    else:
+        # 如果删除的不是当前播放的歌曲，重新调整顺序索引
         playlist_model.reset_index(1, song_id)
-
-    return jsonify({'message': 'Song removed from playlist', 'success': True}), 200
+        
+        # 获取更新后的播放列表
+        updated_songs = playlist_model.get_playlist_songs(1)
+        songs_data = [dict(zip(['id', 'title', 'artist', 'duration', 'uploader_id', 'file_path', 'file_extension', 'time_added'], s)) for s in updated_songs]
+        
+        # 广播歌单更新（不切歌）
+        if socketio:
+            socketio.emit('playlist_updated', {
+                'deleted_song_id': song_id,
+                'playlist': songs_data
+            }, room=None)
+    
+    return jsonify({
+        'message': 'Song removed from playlist',
+        'success': True,
+        'is_playing': is_playing_song
+    }), 200
 

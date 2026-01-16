@@ -179,9 +179,9 @@ export default {
   border-width: 2px 0;
   border-style: solid;
   background-color: rgba(118, 118, 118, 0.563);
-  border-color:rgba(255, 255, 255, 0.455);
+  border-color:rgba(199, 199, 199, 0.455);
   border-radius: 30px; /* Example border radius */
-  box-shadow: 0 4px 80px rgba(0, 0, 0, 0.5); 
+  box-shadow: 0 4px 80px rgba(201, 200, 200, 0.5); 
   padding-left: 20px;
   color: rgb(0, 0, 0);
   text-transform: scaleX(2);
@@ -224,7 +224,7 @@ export default {
 
   margin-left: 60px;
   display: block; /* 块级元素，方便点击 */
-  text-shadow: 0px 0px 10px rgba(0, 0, 0, 1);
+  text-shadow: 0px 0px 10px rgb(189, 188, 188);
 
 }
 .link:hover {

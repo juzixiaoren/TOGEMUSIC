@@ -41,13 +41,13 @@ export default {
     height: 120px;
     overflow: hidden;
     position: fixed; 
-    background-color: rgba(65, 65, 65, 0.15);
+    background-color: rgba(255, 255, 255, 0.5);
     flex-direction: row-reverse;
     
-    backdrop-filter: blur(5px) brightness(200%) contrast(110%);
+    backdrop-filter: blur(1px);
     /* background-image: url("/src/assets/images/backgroundimg.jpg"); */
     background-size: cover;
-    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0px 5px 15px rgba(94, 93, 93, 0.5);
     
     z-index: 999;
     box-sizing: border-box; /* 确保 padding 和 border 不会增加额外尺寸 */
@@ -60,15 +60,21 @@ export default {
     position:absolute;
     bottom: 0;
 
-    font-family: 'MyFont';
-    color: white;
+    font-family: 'MCFont';
+    color: rgb(44, 44, 44);
     margin-left: 50px;
     margin-bottom: 10px;
 }
+.logo{
+    position:absolute;
+    bottom: 0;
+    right: 0;
+    margin-right: 150px;
+}
 .amiya{
     position: relative;
-    left: 1137px;
-    top: -197px;
+    left: 400px;
+    top: -78px;
     opacity: 0;
     transition: opacity 1300ms;
 }

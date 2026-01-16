@@ -2,8 +2,8 @@
     <div class="background">
         <HeaderTop></HeaderTop>
         <div v-if="message" class="message-box" :class="messageType">
-                    {{ message }}
-                </div>
+            {{ message }}
+        </div>
         <div class="panel">
             <div id="logincomponents" class="glass">
                 <LoginComponent @set-message="setMessage"></LoginComponent>

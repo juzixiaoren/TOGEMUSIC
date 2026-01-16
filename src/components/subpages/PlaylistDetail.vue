@@ -1,77 +1,87 @@
 <template>
-  <div class="playlist-detail">
-    <h2>{{ playlist.playlist_name }}</h2>
-    <button @click="showImportDialog = true">导入歌曲</button>
-    <div v-if="showImportDialog" class="dialog">
-      <h3>导入歌曲</h3>
-      <div class="import-tabs">
-        <button :class="{ active: importMode === 'songs' }" @click="importMode = 'songs'">从歌曲选择</button>
-        <button :class="{ active: importMode === 'playlists' }" @click="importMode = 'playlists'">从歌单选择</button>
-      </div>
-      
-      <!-- 从歌曲选择 -->
-      <div v-if="importMode === 'songs'" class="import-section">
-        <div>
-          <input v-model="searchQuery" placeholder="搜索歌名或歌手">
-          <select v-model="filterUser">
-            <option value="">所有用户</option>
-            <option v-for="user in users" :key="user.id" :value="user.id">{{ user.username }}</option>
-          </select>
-          <select v-model="sortBy">
-            <option value="time_added">上传时间</option>
-            <option value="title">歌名</option>
-          </select>
-        </div>
-        <ul>
-          <li v-for="song in filteredSongs" :key="song.id">
-            <input type="checkbox" v-model="selectedSongs" :value="song.id">
-            {{ song.title }} - {{ song.artist }} ({{ song.duration }})
-          </li>
-        </ul>
-      </div>
-
-      <!-- 从歌单选择 -->
-      <div v-if="importMode === 'playlists'" class="import-section">
-        <h4>可用歌单:</h4>
-        <ul class="playlist-select">
-          <li v-for="playlist in otherPlaylists" :key="playlist.id" class="playlist-item">
-            <div class="playlist-header">
-              <button @click="toggleSourcePlaylistExpand(playlist.id)" class="expand-btn">
-                {{ expandedSourcePlaylist === playlist.id ? '▼' : '▶' }}
-              </button>
-              <span>{{ playlist.playlist_name }}</span>
-              <button @click="selectAllFromSourcePlaylist(playlist.id)" class="select-all-btn">全选</button>
-              <button @click="clearSelectionFromSourcePlaylist(playlist.id)" class="clear-btn">取消全选</button>
-            </div>
-            <ul v-if="expandedSourcePlaylist === playlist.id" class="songs-list">
-              <li v-for="song in sourcePlaylistSongsMap[playlist.id] || []" :key="song.id">
-                <input type="checkbox" v-model="selectedSongs" :value="song.id">
-                {{ song.title }} - {{ song.artist }}
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-
-      <button @click="importSongs">确认导入</button>
-      <button @click="showImportDialog = false">取消</button>
+  <div class="background">
+    <HeaderTopAfterLogin :userId="userId" @logout="logout" class="header-top"></HeaderTopAfterLogin>
+    <div v-if="message" class="message-box" :class="messageType">
+      {{ message }}
     </div>
-    <ul>
-      <li v-for="song in playlistSongs" :key="song.id">
-        {{ song.title }} - {{ song.artist }}
-        <button @click="removeSong(song.id)">删除</button>
-      </li>
-    </ul>
+    <div class="home-content">
+      <h2>{{ playlist.playlist_name }}</h2>
+      <button @click="showImportDialog = true">导入歌曲</button>
+      <div v-if="showImportDialog" class="dialog">
+        <h3>导入歌曲</h3>
+        <div class="import-tabs">
+          <button :class="{ active: importMode === 'songs' }" @click="importMode = 'songs'">从歌曲选择</button>
+          <button :class="{ active: importMode === 'playlists' }" @click="importMode = 'playlists'">从歌单选择</button>
+        </div>
+        
+        <!-- 从歌曲选择 -->
+        <div v-if="importMode === 'songs'" class="import-section">
+          <div>
+            <input v-model="searchQuery" placeholder="搜索歌名或歌手">
+            <select v-model="filterUser">
+              <option value="">所有用户</option>
+              <option v-for="user in users" :key="user.id" :value="user.id">{{ user.username }}</option>
+            </select>
+            <select v-model="sortBy">
+              <option value="time_added">上传时间</option>
+              <option value="title">歌名</option>
+            </select>
+          </div>
+          <ul>
+            <li v-for="song in filteredSongs" :key="song.id">
+              <input type="checkbox" v-model="selectedSongs" :value="song.id">
+              {{ song.title }} - {{ song.artist }} ({{ song.duration }})
+            </li>
+          </ul>
+        </div>
+
+        <!-- 从歌单选择 -->
+        <div v-if="importMode === 'playlists'" class="import-section">
+          <h4>可用歌单:</h4>
+          <ul class="playlist-select">
+            <li v-for="playlist in otherPlaylists" :key="playlist.id" class="playlist-item">
+              <div class="playlist-header">
+                <button @click="toggleSourcePlaylistExpand(playlist.id)" class="expand-btn">
+                  {{ expandedSourcePlaylist === playlist.id ? '▼' : '▶' }}
+                </button>
+                <span>{{ playlist.playlist_name }}</span>
+                <button @click="selectAllFromSourcePlaylist(playlist.id)" class="select-all-btn">全选</button>
+                <button @click="clearSelectionFromSourcePlaylist(playlist.id)" class="clear-btn">取消全选</button>
+              </div>
+              <ul v-if="expandedSourcePlaylist === playlist.id" class="songs-list">
+                <li v-for="song in sourcePlaylistSongsMap[playlist.id] || []" :key="song.id">
+                  <input type="checkbox" v-model="selectedSongs" :value="song.id">
+                  {{ song.title }} - {{ song.artist }}
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <button @click="importSongs">确认导入</button>
+        <button @click="showImportDialog = false">取消</button>
+      </div>
+      <ul>
+        <li v-for="song in playlistSongs" :key="song.id">
+          {{ song.title }} - {{ song.artist }}
+          <button @click="removeSong(song.id)">删除</button>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-
+import HeaderTopAfterLogin from '../smallcomponents/HeaderTopAfterLogin.vue';
 export default {
   name: 'PlaylistDetail',
+  components: {
+    HeaderTopAfterLogin
+  },
   data() {
     return {
+      userId: localStorage.getItem('userId') || '未登录用户',
       playlist: {},
       playlistSongs: [],
       allSongs: [],
@@ -84,7 +94,9 @@ export default {
       selectedSongs: [],
       importMode: 'songs',
       expandedSourcePlaylist: null,
-      sourcePlaylistSongsMap: {}
+      sourcePlaylistSongsMap: {},
+      message: "",
+      messageType: "", // 用于存储消息类型
     };
   },
   computed: {
@@ -110,6 +122,20 @@ export default {
     await this.loadOtherPlaylists();
   },
   methods: {
+    logout() {
+      localStorage.removeItem("token"); // 清除 token
+      localStorage.removeItem("userId"); // 清除用户 ID
+      this.updateUserId(); // 更新用户信息
+      this.$router.push({ path: "/Login" }); // 跳转到登录页面
+    },
+    setMessage(content, type) {
+      this.message = content;
+      this.messageType = type; // 设置消息类型
+      setTimeout(() => {
+          this.message = "";
+          this.messageType = "";
+      }, 3000); // 3秒后清除消息提示
+    },
     async loadPlaylist() {
       try {
         const response = await axios.get(`/playlists/${this.$route.params.id}`, {
@@ -119,6 +145,7 @@ export default {
         this.playlistSongs = response.data.songs;
       } catch (error) {
         console.error('加载歌单失败', error);
+        this.setMessage('加载歌单失败', 'error');
       }
     },
     async loadAllSongs() {
@@ -129,6 +156,7 @@ export default {
         this.allSongs = response.data;
       } catch (error) {
         console.error('加载歌曲失败', error);
+        this.setMessage('加载歌曲失败', 'error');
       }
     },
     async loadUsers() {
@@ -139,6 +167,7 @@ export default {
         this.users = response.data;
       } catch (error) {
         console.error('加载用户失败', error);
+        this.setMessage('加载用户失败', 'error');
       }
     },
     async loadOtherPlaylists() {
@@ -150,6 +179,7 @@ export default {
         this.otherPlaylists = response.data.filter(p => p.id != this.$route.params.id);
       } catch (error) {
         console.error('加载其他歌单失败', error);
+        this.setMessage('加载其他歌单失败', 'error');
       }
     },
     async toggleSourcePlaylistExpand(playlistId) {
@@ -166,6 +196,7 @@ export default {
             this.sourcePlaylistSongsMap[playlistId] = response.data.songs;
           } catch (error) {
             console.error(`加载歌单${playlistId}失败`, error);
+            this.setMessage(`加载歌单失败`, 'error');
           }
         }
       }
@@ -185,7 +216,7 @@ export default {
     },
     async importSongs() {
       if (this.selectedSongs.length === 0) {
-        alert('请选择要导入的歌曲');
+        this.setMessage('请选择要导入的歌曲', 'warning');
         return;
       }
       try {
@@ -198,7 +229,8 @@ export default {
         this.selectedSongs = [];
         await this.loadPlaylist();
       } catch (error) {
-        alert('导入歌曲失败: ' + error.response.data.message);
+        console.error('导入歌曲失败', error);
+        this.setMessage('导入歌曲失败: ' + error.response.data.message, 'error');
       }
     },
     async removeSong(songId) {
@@ -208,7 +240,8 @@ export default {
         });
         await this.loadPlaylist();
       } catch (error) {
-        alert('删除歌曲失败: ' + error.response.data.message);
+        console.error('删除歌曲失败', error);
+        this.setMessage('删除歌曲失败: ' + error.response.data.message, 'error');
       }
     }
   }
@@ -306,5 +339,48 @@ export default {
 
 .songs-list input {
   margin-right: 10px;
+}
+.home-content {
+  position: relative;
+  top: 120px; /* 距离顶部的高度 */
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 150px); /* 减去头部高度 */
+  width: 90%;
+}
+.message-box {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+    color: white;
+}
+
+.message-box.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message-box.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.message-box.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
 }
 </style>

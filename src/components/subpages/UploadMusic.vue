@@ -1,34 +1,40 @@
 <template>
-  <div class="upload-music">
-    <h2>上传音乐</h2>
-    <div class="upload-area" @drop="handleDrop" @dragover.prevent @dragenter.prevent>
-      <input type="file" ref="fileInput" multiple accept="audio/*" @change="handleFileSelect" style="display: none">
-      <button @click="$refs.fileInput.click()">选择文件或拖拽上传</button>
-      <p>支持 mp3, flac 等格式</p>
+  <div class="background">
+    <HeaderTopAfterLogin :userId="userId" @logout="logout" class="header-top"></HeaderTopAfterLogin>
+    <div v-if="message" class="message-box" :class="messageType">
+      {{ message }}
     </div>
-    <div v-if="files.length > 0" class="file-list">
-      <h3>上传文件列表</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>文件名</th>
-            <th>歌名</th>
-            <th>歌手</th>
-            <th>时长</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(file, index) in files" :key="index">
-            <td>{{ file.name }}</td>
-            <td><input v-model="file.title" placeholder="歌名"></td>
-            <td><input v-model="file.artist" placeholder="歌手"></td>
-            <td>{{ file.duration || '加载中...' }}</td>
-            <td><button @click="removeFile(index)">删除</button></td>
-          </tr>
-        </tbody>
-      </table>
-      <button @click="uploadFiles" :disabled="uploading">确认上传</button>
+    <div class="home-content">
+      <h2>上传音乐</h2>
+      <div class="upload-area" @drop="handleDrop" @dragover.prevent @dragenter.prevent>
+        <input type="file" ref="fileInput" multiple accept="audio/*" @change="handleFileSelect" style="display: none">
+        <button @click="$refs.fileInput.click()">选择文件或拖拽上传</button>
+        <p>支持 mp3, flac 等格式</p>
+      </div>
+      <div v-if="files.length > 0" class="file-list">
+        <h3>上传文件列表</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>文件名</th>
+              <th>歌名</th>
+              <th>歌手</th>
+              <th>时长</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(file, index) in files" :key="index">
+              <td>{{ file.name }}</td>
+              <td><input v-model="file.title" placeholder="歌名"></td>
+              <td><input v-model="file.artist" placeholder="歌手"></td>
+              <td>{{ file.duration || '加载中...' }}</td>
+              <td><button @click="removeFile(index)">删除</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button @click="uploadFiles" :disabled="uploading">确认上传</button>
+      </div>
     </div>
   </div>
 </template>
@@ -36,15 +42,36 @@
 <script>
 import axios from 'axios';
 import jsmediatags from 'jsmediatags/dist/jsmediatags.min.js';
+import HeaderTopAfterLogin from '../smallcomponents/HeaderTopAfterLogin.vue';
 export default {
+  components: {
+    HeaderTopAfterLogin
+  },
   name: 'UploadMusic',
   data() {
     return {
+      userId: localStorage.getItem('userId') || '未登录用户',
       files: [],
-      uploading: false
+      uploading: false,
+      message: "",
+      messageType: "", // 用于存储消息类型
     };
   },
   methods: {
+    logout() {
+      localStorage.removeItem("token"); // 清除 token
+      localStorage.removeItem("userId"); // 清除用户 ID
+      this.updateUserId(); // 更新用户信息
+      this.$router.push({ path: "/Login" }); // 跳转到登录页面
+    },
+    setMessage(content, type) {
+      this.message = content;
+      this.messageType = type; // 设置消息类型
+      setTimeout(() => {
+          this.message = "";
+          this.messageType = "";
+      }, 3000); // 3秒后清除消息提示
+    },
     handleFileSelect(event) {
       this.addFiles(event.target.files);
     },
@@ -157,7 +184,7 @@ export default {
         await axios.post('/upload', formData, {
           headers: { Authorization: localStorage.getItem('token') }
         });
-        alert('上传成功');
+        this.setMessage('上传成功！', 'success');
         this.files = [];
       } catch (error) {
         alert('上传失败: ' + (error.response?.data?.message || error.message));
@@ -184,5 +211,48 @@ table {
 th, td {
   border: 1px solid #ddd;
   padding: 8px;
+}
+.home-content {
+  position: relative;
+  top: 120px; /* 距离顶部的高度 */
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 150px); /* 减去头部高度 */
+  width: 90%;
+}
+.message-box {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+    color: white;
+}
+
+.message-box.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message-box.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.message-box.warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
 }
 </style>
