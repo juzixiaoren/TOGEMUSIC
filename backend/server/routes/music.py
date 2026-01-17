@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify, send_from_directory
 from flask import send_file, abort, current_app
-from models.song import Song
-from models.playlist import Playlist
-from models.user import User
+from dao.song import Song
+from dao.playlist import Playlist
+from dao.user import User
 import os
 import time
 music_bp = Blueprint('music', __name__)

@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import axios from 'axios';
 
-// 设置 axios 基础 URL
-axios.defaults.baseURL = 'http://localhost:19198';
+// 注意：axios 的 baseURL 已在 main.js 中配置
+// 这里保持引入以便在路由守卫中使用
 
 // 引入路由组件
 import Home from '../components/subpages/Home.vue';

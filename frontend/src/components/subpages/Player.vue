@@ -102,7 +102,10 @@ export default {
   async mounted() {
     this.userId = localStorage.getItem("userId") || "未登录用户"; // 获取用户 ID
     // 仅在组件挂载时建立连接，并强制使用 polling，避免 Werkzeug WebSocket 500
-    this.socket = io('http://localhost:19198', { transports: ['polling'] });
+    this.socket = io('/', {
+      path: '/socket.io',
+      transports: ['websocket']
+    });
 
     await Promise.all([this.loadPlaylists(), this.loadDefaultPlaylist()]);
     setTimeout(() => {

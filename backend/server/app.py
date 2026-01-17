@@ -1,3 +1,12 @@
+import sys
+import os
+import random
+
+# 首先设置模块搜索路径，让 Python 能找到 dao 包
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(__file__))
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask
 import dao.config as dao_config
 from dao.sql_init import SQLInit
@@ -6,11 +15,6 @@ from flask_cors import CORS
 from flask_apscheduler import APScheduler
 from flask_socketio import SocketIO
 from server.config import Config
-import sys
-import os
-import random
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from routes.auth import auth_bp
 from routes.music import music_bp
 
@@ -18,7 +22,7 @@ scheduler = None
 socketio = SocketIO()
 
 import time
-from models.song import Song
+from dao.song import Song
 song_model = Song()
 
 def now_ms():
@@ -84,9 +88,18 @@ def register_tasks():
         song_model.mark_need_notify()
         print("🎵 song ended, switched to next")
 
+    # 启动后台广播任务
+def start_background_tasks():
+    socketio.start_background_task(notify_loop)
+    
 def create_app():
     app = Flask(__name__)
-    CORS(app, origins=["http://127.0.0.1:11451", "http://localhost:11451"])
+    cors_origins = os.getenv("CORS_ORIGINS", "*")
+    CORS(
+        app,
+        resources={r"/*": {"origins": cors_origins}},
+        supports_credentials=True
+    )
     app.config.from_object(Config)
 
     # 注册蓝图
@@ -101,10 +114,7 @@ def create_app():
     scheduler.start()
 
     # 初始化 SocketIO
-    socketio.init_app(app, cors_allowed_origins=["*"])
-
-    # 启动后台广播任务
-    socketio.start_background_task(notify_loop)
+    socketio.init_app(app, cors_allowed_origins=["*"], async_mode='threading')
 
     # ===== WebSocket 事件处理 =====
     @socketio.on('request_next_song')
@@ -194,4 +204,12 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    socketio.run(app, host="0.0.0.0", port=Config.SERVER_PORT, debug=Config.DEBUG)
+    start_background_tasks()
+    
+    socketio.run(
+        app,
+        host=os.getenv("BACKEND_HOST", "0.0.0.0"),
+        port=int(os.getenv("BACKEND_PORT", Config.SERVER_PORT)),
+        debug=os.getenv("FLASK_DEBUG", "0") == "1",
+        allow_unsafe_werkzeug=True
+    )

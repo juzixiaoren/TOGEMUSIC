@@ -4,5 +4,5 @@ import os
 class Config:
     SECRET_KEY = os.urandom(24)
     DEBUG = True
-    SERVER_PORT = 19198
+    SERVER_PORT = 5000
     SCHEDULER_API_ENABLED = True
