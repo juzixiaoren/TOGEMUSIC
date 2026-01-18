@@ -20,11 +20,14 @@ def verify_token(token):
 
 @music_bp.route('/upload', methods=['POST'])
 def upload_music():
+    print(">>> Upload request received")  # 添加日志以确认请求到达
     token = request.headers.get('Authorization')
     if not token:
+        print(">>> No token provided")
         return jsonify({'message': 'No token provided'}), 401
     user_id = verify_token(token)
     if not user_id:
+        print(f">>> Invalid token for token: {token[:10]}...")
         return jsonify({'message': 'Invalid token'}), 401
 
     # 打印调试信息
@@ -169,8 +172,16 @@ def get_song_file(song_id, ext):
     if not song:
         abort(404, description='Song not found')
 
-    file_path = os.path.join(UPLOADS_DIR, os.path.basename(song[5]))
-    print(file_path)
+    # song[5] is the stored file path. It might be a Windows path (e.g. E:\...)
+    # When running on Linux (Docker), os.path.basename won't handle '\' correctly.
+    stored_path = song[5]
+    if '\\' in stored_path:
+        filename = stored_path.split('\\')[-1]
+    else:
+        filename = os.path.basename(stored_path)
+
+    file_path = os.path.join(UPLOADS_DIR, filename)
+    print(f"Serving file from: {file_path}")
     
     # 验证请求的后缀和文件实际后缀一致
     if not file_path.endswith(f'.{ext}'):

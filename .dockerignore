@@ -42,3 +42,5 @@ __pycache__/
 .git
 .gitignore
 *.bat
+#数据库文件
+*.db

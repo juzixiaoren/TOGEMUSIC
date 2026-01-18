@@ -101,10 +101,11 @@ export default {
   },
   async mounted() {
     this.userId = localStorage.getItem("userId") || "未登录用户"; // 获取用户 ID
-    // 仅在组件挂载时建立连接，并强制使用 polling，避免 Werkzeug WebSocket 500
+    // 仅在组件挂载时建立连接
+    // 允许 websocket 和 polling，确保兼容性
     this.socket = io('/', {
       path: '/socket.io',
-      transports: ['websocket']
+      transports: ['websocket', 'polling'] 
     });
 
     await Promise.all([this.loadPlaylists(), this.loadDefaultPlaylist()]);
@@ -130,7 +131,7 @@ export default {
 
     // 监听后端播放列表打乱事件
     this.socket.on('playlist_shuffled', (data) => {
-      this.setMessage('🔀 播放列表已打乱', 'success');
+      this.setMessage('播放顺序已经更新', 'success');
       if (data && data.songs) {
         this.currentPlaylist = data.songs;
         this.selectedForPlay = this.currentPlaylist.map(s => s.id);
@@ -346,7 +347,7 @@ export default {
         }
 
         this.currentSong = song;
-        const audioUrl = `http://localhost:19198/songs/${song.id}/file.${song.file_extension}`;
+        const audioUrl = `/api/songs/${song.id}/file.${song.file_extension}`;
 
         // --- 创建新实例 ---
         globalHowl = new Howl({

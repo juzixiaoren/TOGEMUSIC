@@ -129,7 +129,7 @@ export default {
       };
 
       axios
-        .post("http://localhost:19198/register", registerData)
+        .post("/register", registerData)
         .then((response) => {
           if (response.data.success) {
            this.$emit("set-message", "注册成功！", "success");

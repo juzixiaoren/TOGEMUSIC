@@ -12,15 +12,7 @@ RUN npm run build
 FROM nginx:alpine
 COPY --from=build /frontend/dist /usr/share/nginx/html
 
-# 配置 Nginx 监听 11451 端口
-RUN echo "server { \
-    listen 11451; \
-    server_name _; \
-    location / { \
-        root /usr/share/nginx/html; \
-        index index.html index.htm; \
-        try_files \$uri \$uri/ /index.html; \
-    } \
-}" > /etc/nginx/conf.d/default.conf
+# 将本地写好的复杂 Nginx 配置复制进去，替代 echo
+COPY default.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 11451

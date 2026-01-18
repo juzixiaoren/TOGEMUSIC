@@ -109,7 +109,7 @@ export default {
       };
 
       axios
-        .post("http://localhost:19198/login", loginData)
+        .post("/login", loginData)
         .then((response) => {
           if (response.data && response.data.success) {
             this.$emit("set-message", "登录成功！", "success");
